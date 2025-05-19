@@ -1,2 +1,2 @@
-# Geogussr
+# Geoguessr
 APCS Final Project
