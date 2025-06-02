@@ -96,12 +96,32 @@ void keyPressed() {
       println("Guessed: " + guessCoord.x + ", " + guessCoord.y);
       println("Actual: " + currentLat + ", " + currentLng);
       println("Distance: " + nf(distanceKm, 1, 2) + " km");
+      if (distanceKm <= 1000){
+        System.out.println("Wow, Amazing!");
+      }
+      else if (distanceKm <= 1800){
+        System.out.println("That's a pretty good guess!");
+      }
+      else if (distanceKm <= 2700){
+        System.out.println("Not bad.");
+      }
+      else if (distanceKm <= 4800){
+        System.out.println("Could've been worse...");
+      }
+      else{
+        System.out.println("What are you doing???");
+      }
     } else {
       println("Click on the map to guess first!");
     }
   }
   
   if(key == 'K' || key == 'k') {
+    System.out.println("Loading Image...");
+    locationReady = false;
+    guessPixel = null;
+    mapOpen = false;
+    showResult = false;
     prepareNextRandomLocation();
   }
 
@@ -185,7 +205,6 @@ boolean isValidStreetViewLocation(float lat, float lng) {
 void prepareNextRandomLocation() {
   int attempts = 0;
   while (attempts < 1500) {
-    System.out.print(attempts);
     float lat = random(-60, 60);
     float lng = random(-180, 180);
     if (isValidStreetViewLocation(lat, lng)) {
@@ -193,6 +212,7 @@ void prepareNextRandomLocation() {
       currentLng = lng;
       locationReady = true;
       viewChanged = true;
+      System.out.println("Attempts to load image:" + attempts);
       println("Loaded random location: " + currentLat + ", " + currentLng);
       return;
     }
