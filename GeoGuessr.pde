@@ -22,8 +22,18 @@ PVector guessPixel = null;
 PVector actualPixel = null;
 float distanceKm = 0;
 
+float[][] landRegions = {
+  {40, -100, 10, 30},   // North America
+  {50, 10, 20, 40},     // Europe
+  {-10, 120, 20, 30},   // Southeast Asia
+  {-20, 135, 10, 15},   // Australia
+  {10, -60, 15, 20},    // South America
+  {0, 30, 20, 30},      // Africa
+};
+
+
 void setup() {
-  size(800, 600);
+  size(1720, 920);
   frameRate(1200);
   mapImage = loadImage("WorldMap.jpg");
   thread("prepareNextRandomLocation"); // Start random location loader
@@ -59,7 +69,7 @@ void draw() {
 
       fill(0);
       textSize(16);
-      textAlign(LEFT, CENTER);
+      textAlign(LEFT, TOP);
       text("Distance: " + nf(distanceKm, 1, 2) + " km", 10, 10);
     }
 
@@ -83,13 +93,13 @@ void draw() {
 void keyPressed() {
   if (key == 'm' || key == 'M') {
     mapOpen = !mapOpen;
+    if (!mapOpen) {
+      showResult = false; // Hide results when returning to street view
+    }
   }
 
   if (key == 'g' || key == 'G') {
-    if (showResult == true){
-      System.out.println("You already made a guess!");
-    }
-    else if (guessCoord != null && locationReady) {
+    if (guessCoord != null && locationReady) {
       distanceKm = haversine(currentLat, currentLng, guessCoord.x, guessCoord.y);
       showResult = true;
       actualPixel = latLngToPixel(currentLat, currentLng);
@@ -118,7 +128,7 @@ void keyPressed() {
   
   if(key == 'K' || key == 'k') {
     System.out.println("Loading Image...");
-    locationReady = !locationReady;
+    locationReady = false;
     guessPixel = null;
     mapOpen = false;
     showResult = false;
@@ -128,10 +138,7 @@ void keyPressed() {
 }
 
 void mousePressed() {
-  if (showResult == true){
-    System.out.println("You already made a guess!");
-  }
-  else if (mapOpen && locationReady) {
+  if (mapOpen && locationReady) {
     guessPixel = new PVector(mouseX, mouseY);
     guessCoord = pixelToLatLng(mouseX, mouseY);
     println("Guessed lat/lng: " + guessCoord.x + ", " + guessCoord.y);
@@ -152,7 +159,7 @@ void mouseDragged() {
 void loadStreetViewImage() {
   pitch = constrain(pitch, -90, 90);
 
-  String svURL = "https://maps.googleapis.com/maps/api/streetview?size=800x600"
+  String svURL = "https://maps.googleapis.com/maps/api/streetview?size=1720x920"
     + "&location=" + currentLat + "," + currentLng
     + "&heading=" + heading
     + "&pitch=" + pitch
@@ -205,21 +212,60 @@ boolean isValidStreetViewLocation(float lat, float lng) {
   return false;
 }
 
-void prepareNextRandomLocation() {
-  int attempts = 0;
-  while (attempts < 1500) {
-    float lat = random(-60, 60);
-    float lng = random(-180, 180);
-    if (isValidStreetViewLocation(lat, lng)){
-      currentLat = lat;
-      currentLng = lng;
-      locationReady = true;
-      viewChanged = true;
-      System.out.println("Attempts to load image: " + attempts);
-      println("Loaded random location: " + currentLat + ", " + currentLng);
-      return;
+float[] pickWeightedLandRegion() {
+  int index = int(random(landRegions.length));
+  float[] region = landRegions[index];
+  float lat = random(region[0], region[0] + region[2]);
+  float lng = random(region[1], region[1] + region[3]);
+  return new float[] {lat, lng};
+}
+
+
+/*
+PVector findNearbyStreetView(float baseLat, float baseLng, float radiusKm) {
+    float step = 0.01;
+    int steps = int(radiusKm);
+    for (int dx = -steps; dx <= steps; dx++) {
+        for (int dy = -steps; dy <= steps; dy++) {
+            float tryLat = baseLat + dx * step;
+            float tryLng = baseLng + dy * step;
+            if (isValidStreetViewLocation(tryLat, tryLng)) {
+                return new PVector(tryLat, tryLng);
+            }
+        }
     }
-    attempts++;
-  }
-  println("Failed to find a valid location.");
+    return null;
+}
+*/
+
+void prepareNextRandomLocation() {
+        int attempts = 0;
+        while (attempts < 1500) {
+          System.out.println(attempts);
+            float[] coords = pickWeightedLandRegion();
+            float lat = coords[0];
+            float lng = coords[1];
+          if (isValidStreetViewLocation(lat, lng)) {
+              currentLat = lat;
+              currentLng = lng;
+              break;
+          }  /* else {
+              PVector nearby = findNearbyStreetView(lat, lng, 5); // search in 5km radius      
+          
+              if (nearby != null) {
+                  currentLat = nearby.x;
+                  currentLng = nearby.y;
+                  break;
+              }
+          }
+          */
+          attempts++;
+          }
+            if (attempts >= 1500) {
+                println("Failed to find a valid location.");
+                return;
+            }
+            locationReady = true;
+            viewChanged = true;
+            println("Loaded location: " + currentLat + ", " + currentLng + " (Attempts: " + attempts + ")");
 }
