@@ -59,7 +59,7 @@ void draw() {
 
       fill(0);
       textSize(16);
-      textAlign(LEFT, TOP);
+      textAlign(LEFT, CENTER);
       text("Distance: " + nf(distanceKm, 1, 2) + " km", 10, 10);
     }
 
@@ -83,13 +83,13 @@ void draw() {
 void keyPressed() {
   if (key == 'm' || key == 'M') {
     mapOpen = !mapOpen;
-    if (!mapOpen) {
-      showResult = false; // Hide results when returning to street view
-    }
   }
 
   if (key == 'g' || key == 'G') {
-    if (guessCoord != null && locationReady) {
+    if (showResult == true){
+      System.out.println("You already made a guess!");
+    }
+    else if (guessCoord != null && locationReady) {
       distanceKm = haversine(currentLat, currentLng, guessCoord.x, guessCoord.y);
       showResult = true;
       actualPixel = latLngToPixel(currentLat, currentLng);
@@ -118,7 +118,7 @@ void keyPressed() {
   
   if(key == 'K' || key == 'k') {
     System.out.println("Loading Image...");
-    locationReady = false;
+    locationReady = !locationReady;
     guessPixel = null;
     mapOpen = false;
     showResult = false;
@@ -128,7 +128,10 @@ void keyPressed() {
 }
 
 void mousePressed() {
-  if (mapOpen && locationReady) {
+  if (showResult == true){
+    System.out.println("You already made a guess!");
+  }
+  else if (mapOpen && locationReady) {
     guessPixel = new PVector(mouseX, mouseY);
     guessCoord = pixelToLatLng(mouseX, mouseY);
     println("Guessed lat/lng: " + guessCoord.x + ", " + guessCoord.y);
@@ -207,12 +210,12 @@ void prepareNextRandomLocation() {
   while (attempts < 1500) {
     float lat = random(-60, 60);
     float lng = random(-180, 180);
-    if (isValidStreetViewLocation(lat, lng)) {
+    if (isValidStreetViewLocation(lat, lng)){
       currentLat = lat;
       currentLng = lng;
       locationReady = true;
       viewChanged = true;
-      System.out.println("Attempts to load image:" + attempts);
+      System.out.println("Attempts to load image: " + attempts);
       println("Loaded random location: " + currentLat + ", " + currentLng);
       return;
     }
