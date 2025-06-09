@@ -1,2 +1,2 @@
 # Geoguessr
-APCS Final Project
+APCS Final Project - Benjamin Reutens, Araf Hoque
