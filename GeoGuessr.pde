@@ -23,13 +23,28 @@ PVector guessPixel = null;
 PVector actualPixel = null;
 float distanceKm = 0;
 
+// High Street View coverage regions: US, Canada, Europe, Japan, Taiwan, South Korea, Mexico, Chile, Argentina, South Africa, Australia, New Zealand
 float[][] landRegions = {
-  {40, -100, 10, 30},
-  {50, 10, 20, 40},
-  {-10, 120, 20, 30},
-  {-20, 135, 10, 15},
-  {10, -60, 15, 20},
-  {0, 30, 20, 30},
+  // USA and Canada
+  {25, -125, 24, 60},    // US Lower 48 and Southern Canada
+  {43, -80, 20, 35},     // Northern US, Southern Canada (Great Lakes, Ontario, Quebec)
+  // Western Europe
+  {35, -10, 25, 45},     // Spain, France, UK, Germany, Italy, etc.
+  {55, 10, 15, 35},      // Scandinavia, Poland, etc.
+  // Japan, Taiwan, South Korea
+  {32, 128, 12, 15},     // Japan (all main islands)
+  {23, 120, 3, 4},       // Taiwan
+  {35, 126, 5, 4},       // South Korea
+  // Australia, New Zealand
+  {-39, 173, 6, 10},     // New Zealand
+  {-38, 140, 12, 13},    // Southeastern Australia (Sydney/Melbourne/Adelaide)
+  {-28, 114, 6, 18},     // Western Australia (Perth)
+  // South America
+  {-35, -72, 5, 10},     // Central Chile
+  {-35, -63, 5, 6},      // Buenos Aires/Argentina
+  {19, -103, 7, 16},     // Mexico
+  // South Africa
+  {-35, 17, 8, 16},      // South Africa
 };
 
 void setup() {
