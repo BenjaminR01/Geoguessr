@@ -1,21 +1,21 @@
-String apiKey = "AIzaSyDZO9a5ayFjj9t35D1ZbitJFLEshGvj_rs"; // api key to grab images from google street view
-PImage streetViewImage; //street view Image variable
-PImage mapImage; //map image variable
+String apiKey = "AIzaSyDZO9a5ayFjj9t35D1ZbitJFLEshGvj_rs";
+PImage streetViewImage;
+PImage mapImage;
 
-float heading = 0; //x- direction 
-float pitch = 0; //y- direction
-float mouseSensitivity = 0.2; //mouse sensitivity (CAN CHANGE)
+float heading = 0;
+float pitch = 0;
+float mouseSensitivity = 0.2;
 
-float currentLat = 0; //stores LAT coords
-float currentLng = 0; //stores LONG coords
+float currentLat = 0;
+float currentLng = 0;
 
-volatile boolean locationReady = false; // If current location is ready
-volatile boolean cacheReady = false;    // If next location is preloaded and ready
+volatile boolean locationReady = false;
+volatile boolean cacheReady = false;
 
-float cacheLat = 0, cacheLng = 0;       // Preloaded coordinates
+float cacheLat = 0, cacheLng = 0;
 
-boolean viewChanged = true; //view change bool val
-boolean mapOpen = false; //if map is open val
+boolean viewChanged = true;
+boolean mapOpen = false;
 boolean showResult = false;
 
 PVector guessCoord = null;
@@ -24,12 +24,12 @@ PVector actualPixel = null;
 float distanceKm = 0;
 
 float[][] landRegions = {
-  {40, -100, 10, 30},   // North America
-  {50, 10, 20, 40},     // Europe
-  {-10, 120, 20, 30},   // Southeast Asia
-  {-20, 135, 10, 15},   // Australia
-  {10, -60, 15, 20},    // South America
-  {0, 30, 20, 30},      // Africa
+  {40, -100, 10, 30},
+  {50, 10, 20, 40},
+  {-10, 120, 20, 30},
+  {-20, 135, 10, 15},
+  {10, -60, 15, 20},
+  {0, 30, 20, 30},
 };
 
 void setup() {
@@ -41,32 +41,25 @@ void setup() {
 
 void draw() {
   background(255);
-
   if (!locationReady) {
-    // Loading screen
     fill(0);
     textAlign(CENTER, CENTER);
     textSize(24);
     text("Loading location...", width / 2, height / 2);
     return;
   }
-
   if (mapOpen) {
     image(mapImage, 0, 0, width, height);
-
     if (guessPixel != null) {
       fill(255, 0, 0);
       stroke(0);
       ellipse(guessPixel.x, guessPixel.y, 12, 12);
     }
-
     if (showResult && actualPixel != null) {
       fill(0, 200, 255);
       ellipse(actualPixel.x, actualPixel.y, 12, 12);
-
       stroke(0);
       line(guessPixel.x, guessPixel.y, actualPixel.x, actualPixel.y);
-
       fill(0);
       textSize(16);
       textAlign(LEFT, TOP);
@@ -74,12 +67,10 @@ void draw() {
     }
     return;
   }
-
   if (viewChanged) {
     loadStreetViewImage();
     viewChanged = false;
   }
-
   if (streetViewImage != null) {
     image(streetViewImage, 0, 0);
   } else {
@@ -93,10 +84,9 @@ void keyPressed() {
   if (key == 'm' || key == 'M') {
     mapOpen = !mapOpen;
     if (!mapOpen) {
-      showResult = false; // Hide results when returning to street view
+      showResult = false;
     }
   }
-
   if (key == 'g' || key == 'G') {
     if (guessCoord != null && locationReady) {
       distanceKm = haversine(currentLat, currentLng, guessCoord.x, guessCoord.y);
@@ -116,12 +106,10 @@ void keyPressed() {
       } else {
         System.out.println("What are you doing???");
       }
-
     } else {
       println("Click on the map to guess first!");
     }
   }
-
   if (key == 'K' || key == 'k') {
     guessPixel = null;
     mapOpen = false;
@@ -150,13 +138,11 @@ void mouseDragged() {
 
 void loadStreetViewImage() {
   pitch = constrain(pitch, -90, 90);
-
   String svURL = "https://maps.googleapis.com/maps/api/streetview?size=1720x920"
     + "&location=" + currentLat + "," + currentLng
     + "&heading=" + heading
     + "&pitch=" + pitch
     + "&key=" + apiKey;
-
   try {
     streetViewImage = loadImage(svURL + "&format=png", "png");
   } catch (Exception e) {
@@ -211,42 +197,19 @@ float[] pickWeightedLandRegion() {
   return new float[] {lat, lng};
 }
 
-PVector findNearbyStreetView(float baseLat, float baseLng, float radiusKm, int tries) {
-  for (int i = 0; i < tries; i++) {
-    float angle = random(TWO_PI);
-    float distance = random(radiusKm); // km
-    float dLat = distance * cos(angle) * 0.009; // ~0.009 degrees ~ 1km lat
-    float dLng = distance * sin(angle) * 0.009 / cos(radians(baseLat));
-    float tryLat = baseLat + dLat;
-    float tryLng = baseLng + dLng;
-    if (isValidStreetViewLocation(tryLat, tryLng)) {
-      return new PVector(tryLat, tryLng);
-    }
-  }
-  return null;
-}
-
 void preloadNextLocation() {
   while (true) {
     float lat = 0, lng = 0;
-    int attempts = 0;
     boolean found = false;
-    while (!found && attempts < 200) {
+    int maxAttempts = 100;
+    int attempts = 0;
+    while (!found && attempts < maxAttempts) {
       float[] coords = pickWeightedLandRegion();
       lat = coords[0];
       lng = coords[1];
       if (isValidStreetViewLocation(lat, lng)) {
         found = true;
         break;
-      } else {
-        // Try up to 30 nearby samples within 4km if needed
-        PVector nearby = findNearbyStreetView(lat, lng, 4, 30);
-        if (nearby != null) {
-          lat = nearby.x;
-          lng = nearby.y;
-          found = true;
-          break;
-        }
       }
       attempts++;
     }
@@ -255,7 +218,8 @@ void preloadNextLocation() {
       cacheLng = lng;
       cacheReady = true;
     } else {
-      println("Failed to cache location");
+      println("Failed to find valid location after " + maxAttempts + " attempts.");
+      delay(2000);
     }
     while (cacheReady) delay(10);
   }
@@ -267,7 +231,7 @@ void loadCachedLocation() {
     currentLng = cacheLng;
     locationReady = true;
     viewChanged = true;
-    cacheReady = false; // Signal thread to start preloading again
+    cacheReady = false;
     println("Loaded location: " + currentLat + ", " + currentLng);
   } else {
     println("Location not ready yet! (should be rare)");
