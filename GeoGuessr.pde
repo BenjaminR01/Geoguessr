@@ -1,7 +1,6 @@
-//WIP
-String apiKey = "AIzaSyDZO9a5ayFjj9t35D1ZbitJFLEshGvj_rs"; //api key to grab images from google street view
+String apiKey = "AIzaSyDZO9a5ayFjj9t35D1ZbitJFLEshGvj_rs"; // api key to grab images from google street view
 PImage streetViewImage; //street view Image variable
-PImage mapImage; //map image variable.
+PImage mapImage; //map image variable
 
 float heading = 0; //x- direction 
 float pitch = 0; //y- direction
@@ -10,8 +9,10 @@ float mouseSensitivity = 0.2; //mouse sensitivity (CAN CHANGE)
 float currentLat = 0; //stores LAT coords
 float currentLng = 0; //stores LONG coords
 
- boolean locationReady = false; //bool value to determine if the sketch has the next location
- float nextLat, nextLng; //the next location coords
+volatile boolean locationReady = false; // If current location is ready
+volatile boolean cacheReady = false;    // If next location is preloaded and ready
+
+float cacheLat = 0, cacheLng = 0;       // Preloaded coordinates
 
 boolean viewChanged = true; //view change bool val
 boolean mapOpen = false; //if map is open val
@@ -31,12 +32,11 @@ float[][] landRegions = {
   {0, 30, 20, 30},      // Africa
 };
 
-
 void setup() {
   size(1720, 920);
-  frameRate(1200);
+  frameRate(60);
   mapImage = loadImage("WorldMap.jpg");
-  thread("prepareNextRandomLocation"); // Start random location loader
+  thread("preloadNextLocation");
 }
 
 void draw() {
@@ -72,7 +72,6 @@ void draw() {
       textAlign(LEFT, TOP);
       text("Distance: " + nf(distanceKm, 1, 2) + " km", 10, 10);
     }
-
     return;
   }
 
@@ -106,35 +105,29 @@ void keyPressed() {
       println("Guessed: " + guessCoord.x + ", " + guessCoord.y);
       println("Actual: " + currentLat + ", " + currentLng);
       println("Distance: " + nf(distanceKm, 1, 2) + " km");
-      if (distanceKm <= 1000){
+      if (distanceKm <= 1000) {
         System.out.println("Wow, Amazing!");
-      }
-      else if (distanceKm <= 1800){
+      } else if (distanceKm <= 1800) {
         System.out.println("That's a pretty good guess!");
-      }
-      else if (distanceKm <= 2700){
+      } else if (distanceKm <= 2700) {
         System.out.println("Not bad.");
-      }
-      else if (distanceKm <= 4800){
+      } else if (distanceKm <= 4800) {
         System.out.println("Could've been worse...");
-      }
-      else{
+      } else {
         System.out.println("What are you doing???");
       }
+
     } else {
       println("Click on the map to guess first!");
     }
   }
-  
-  if(key == 'K' || key == 'k') {
-    System.out.println("Loading Image...");
-    locationReady = false;
+
+  if (key == 'K' || key == 'k') {
     guessPixel = null;
     mapOpen = false;
     showResult = false;
-    prepareNextRandomLocation();
+    loadCachedLocation();
   }
-
 }
 
 void mousePressed() {
@@ -149,7 +142,6 @@ void mouseDragged() {
   if (!mapOpen && locationReady) {
     float dx = (mouseX - pmouseX) * mouseSensitivity;
     float dy = (mouseY - pmouseY) * mouseSensitivity;
-
     heading -= dx;
     pitch += dy;
     viewChanged = true;
@@ -200,7 +192,6 @@ boolean isValidStreetViewLocation(float lat, float lng) {
   String metadataURL = "https://maps.googleapis.com/maps/api/streetview/metadata?"
     + "location=" + lat + "," + lng
     + "&key=" + apiKey;
-
   try {
     JSONObject metadata = loadJSONObject(metadataURL);
     if (metadata != null) {
@@ -220,52 +211,66 @@ float[] pickWeightedLandRegion() {
   return new float[] {lat, lng};
 }
 
-
-/*
-PVector findNearbyStreetView(float baseLat, float baseLng, float radiusKm) {
-    float step = 0.01;
-    int steps = int(radiusKm);
-    for (int dx = -steps; dx <= steps; dx++) {
-        for (int dy = -steps; dy <= steps; dy++) {
-            float tryLat = baseLat + dx * step;
-            float tryLng = baseLng + dy * step;
-            if (isValidStreetViewLocation(tryLat, tryLng)) {
-                return new PVector(tryLat, tryLng);
-            }
-        }
+PVector findNearbyStreetView(float baseLat, float baseLng, float radiusKm, int tries) {
+  for (int i = 0; i < tries; i++) {
+    float angle = random(TWO_PI);
+    float distance = random(radiusKm); // km
+    float dLat = distance * cos(angle) * 0.009; // ~0.009 degrees ~ 1km lat
+    float dLng = distance * sin(angle) * 0.009 / cos(radians(baseLat));
+    float tryLat = baseLat + dLat;
+    float tryLng = baseLng + dLng;
+    if (isValidStreetViewLocation(tryLat, tryLng)) {
+      return new PVector(tryLat, tryLng);
     }
-    return null;
+  }
+  return null;
 }
-*/
 
-void prepareNextRandomLocation() {
-        int attempts = 0;
-        while (attempts < 1500) {
-          System.out.println(attempts);
-            float[] coords = pickWeightedLandRegion();
-            float lat = coords[0];
-            float lng = coords[1];
-          if (isValidStreetViewLocation(lat, lng)) {
-              currentLat = lat;
-              currentLng = lng;
-              break;
-          }  /* else {
-              PVector nearby = findNearbyStreetView(lat, lng, 5); // search in 5km radius      
-          
-              if (nearby != null) {
-                  currentLat = nearby.x;
-                  currentLng = nearby.y;
-                  break;
-              }
-          }
-          */
-          attempts++;
-          }
-            if (attempts >= 1500) {
-                println("Failed to find a valid location.");
-                return;
-            }
-            locationReady = true;
-            viewChanged = true;
-            println("Loaded location: " + currentLat + ", " + currentLng + " (Attempts: " + attempts + ")");
+void preloadNextLocation() {
+  while (true) {
+    float lat = 0, lng = 0;
+    int attempts = 0;
+    boolean found = false;
+    while (!found && attempts < 200) {
+      float[] coords = pickWeightedLandRegion();
+      lat = coords[0];
+      lng = coords[1];
+      if (isValidStreetViewLocation(lat, lng)) {
+        found = true;
+        break;
+      } else {
+        // Try up to 30 nearby samples within 4km if needed
+        PVector nearby = findNearbyStreetView(lat, lng, 4, 30);
+        if (nearby != null) {
+          lat = nearby.x;
+          lng = nearby.y;
+          found = true;
+          break;
+        }
+      }
+      attempts++;
+    }
+    if (found) {
+      cacheLat = lat;
+      cacheLng = lng;
+      cacheReady = true;
+    } else {
+      println("Failed to cache location");
+    }
+    while (cacheReady) delay(10);
+  }
+}
+
+void loadCachedLocation() {
+  if (cacheReady) {
+    currentLat = cacheLat;
+    currentLng = cacheLng;
+    locationReady = true;
+    viewChanged = true;
+    cacheReady = false; // Signal thread to start preloading again
+    println("Loaded location: " + currentLat + ", " + currentLng);
+  } else {
+    println("Location not ready yet! (should be rare)");
+    locationReady = false;
+  }
 }
