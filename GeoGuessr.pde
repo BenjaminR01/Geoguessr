@@ -23,28 +23,21 @@ PVector guessPixel = null;
 PVector actualPixel = null;
 float distanceKm = 0;
 
-// High Street View coverage regions: US, Canada, Europe, Japan, Taiwan, South Korea, Mexico, Chile, Argentina, South Africa, Australia, New Zealand
 float[][] landRegions = {
-  // USA and Canada
-  {25, -125, 24, 60},    // US Lower 48 and Southern Canada
-  {43, -80, 20, 35},     // Northern US, Southern Canada (Great Lakes, Ontario, Quebec)
-  // Western Europe
-  {35, -10, 25, 45},     // Spain, France, UK, Germany, Italy, etc.
-  {55, 10, 15, 35},      // Scandinavia, Poland, etc.
-  // Japan, Taiwan, South Korea
-  {32, 128, 12, 15},     // Japan (all main islands)
-  {23, 120, 3, 4},       // Taiwan
-  {35, 126, 5, 4},       // South Korea
-  // Australia, New Zealand
-  {-39, 173, 6, 10},     // New Zealand
-  {-38, 140, 12, 13},    // Southeastern Australia (Sydney/Melbourne/Adelaide)
-  {-28, 114, 6, 18},     // Western Australia (Perth)
-  // South America
-  {-35, -72, 5, 10},     // Central Chile
-  {-35, -63, 5, 6},      // Buenos Aires/Argentina
-  {19, -103, 7, 16},     // Mexico
-  // South Africa
-  {-35, 17, 8, 16},      // South Africa
+  {25, -125, 24, 60},
+  {43, -80, 20, 35},
+  {35, -10, 25, 45},
+  {55, 10, 15, 35},
+  {32, 128, 12, 15},
+  {23, 120, 3, 4},
+  {35, 126, 5, 4},
+  {-39, 173, 6, 10},
+  {-38, 140, 12, 13},
+  {-28, 114, 6, 18},
+  {-35, -72, 5, 10},
+  {-35, -63, 5, 6},
+  {19, -103, 7, 16},
+  {-35, 17, 8, 16},
 };
 
 void setup() {
@@ -159,7 +152,7 @@ void loadStreetViewImage() {
     + "&pitch=" + pitch
     + "&key=" + apiKey;
   try {
-    streetViewImage = loadImage(svURL + "&format=png", "png");
+    streetViewImage = loadImage(svURL);
   } catch (Exception e) {
     println("Error loading Street View image: " + e.getMessage());
     streetViewImage = null;
@@ -190,9 +183,7 @@ float haversine(float lat1, float lon1, float lat2, float lon2) {
 }
 
 boolean isValidStreetViewLocation(float lat, float lng) {
-  String metadataURL = "https://maps.googleapis.com/maps/api/streetview/metadata?"
-    + "location=" + lat + "," + lng
-    + "&key=" + apiKey;
+  String metadataURL = "https://maps.googleapis.com/maps/api/streetview/metadata?location=" + lat + "," + lng + "&key=" + apiKey;
   try {
     JSONObject metadata = loadJSONObject(metadataURL);
     if (metadata != null) {
@@ -234,7 +225,7 @@ void preloadNextLocation() {
       cacheReady = true;
     } else {
       println("Failed to find valid location after " + maxAttempts + " attempts.");
-      delay(2000);
+      delay(200);
     }
     while (cacheReady) delay(10);
   }
@@ -247,6 +238,7 @@ void loadCachedLocation() {
     locationReady = true;
     viewChanged = true;
     cacheReady = false;
+    loadStreetViewImage();  // ← immediate image fetch
     println("Loaded location: " + currentLat + ", " + currentLng);
   } else {
     println("Location not ready yet! (should be rare)");
