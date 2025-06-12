@@ -6,12 +6,12 @@ boolean locationReady = false, viewChanged = true, mapOpen = false, showResult =
 PVector guessCoord, guessPixel, actualPixel;
 float distanceKm = 0;
 
-float[][] landRegions = {
+float[][] landRegions = { 
   {25, -125, 24, 60}, {43, -80, 20, 35}, {35, -10, 25, 45}, {55, 10, 15, 35},
   {32, 128, 12, 15}, {23, 120, 3, 4}, {35, 126, 5, 4}, {-39, 173, 6, 10},
   {-38, 140, 12, 13}, {-28, 114, 6, 18}, {-35, -72, 5, 10}, {-35, -63, 5, 6},
   {19, -103, 7, 16}, {-35, 17, 8, 16},
-};
+}; // Coordinates for general landmasses
 
 void setup() {
   size(1720, 860);
@@ -71,9 +71,9 @@ void draw() {
 }
 
 void keyPressed() {
-  if (key == 'g' || key == 'G') {
+  if (key == 'g' || key == 'G') { // Inputs the guess
     if (guessCoord != null && locationReady) {
-      distanceKm = haversine(currentLat, currentLng, guessCoord.x, guessCoord.y);
+      distanceKm = haversine(currentLat, currentLng, guessCoord.x, guessCoord.y); // Get distance using haversine
       showResult = true;
       actualPixel = latLngToPixel(currentLat, currentLng);
       guessMade = true;
@@ -86,7 +86,7 @@ void keyPressed() {
     }
   }
   if (key == 'k' || key == 'K') {
-    if (guessMade) {
+    if (guessMade) { // Generates new location if guess has been made
       guessCoord = guessPixel = actualPixel = null;
       showResult = guessMade = false;
       loadNextLocation();
@@ -109,7 +109,7 @@ void mousePressed() {
 }
 
 void mouseDragged() {
-  if (mouseX < 860 && locationReady) {
+  if (mouseX < 860 && locationReady) { // Changes POV of observer
     heading -= (mouseX - pmouseX) * mouseSensitivity;
     pitch += (mouseY - pmouseY) * mouseSensitivity;
     viewChanged = true;
@@ -131,7 +131,7 @@ void loadStreetViewImage() {
   }
 }
 
-void preloadNextValidLocation() {
+void preloadNextValidLocation() { // Loads the next image while the player is inputting a guess. This will save time.
   int maxAttempts = 1500;
   float minDistanceKm = 50;
   for (int i = 0; i < maxAttempts; i++) {
@@ -161,7 +161,7 @@ void loadNextLocation() {
 }
 
 float[] pickWeightedLandRegion() {
-  int index = int(random(landRegions.length));
+  int index = int(random(landRegions.length)); // Picks location from a certain region
   float[] region = landRegions[index];
   float lat = random(region[0], region[0] + region[2]);
   float lng = random(region[1], region[1] + region[3]);
@@ -179,19 +179,19 @@ boolean isValidStreetViewLocation(float lat, float lng) {
   return false;
 }
 
-PVector pixelToLatLng(float x, float y) {
+PVector pixelToLatLng(float x, float y) { // Converts pixel units to latitude and longitude
   float lng = map(x, 0, 860, -180, 180);
   float lat = map(y, 860, 0, -90, 90);
   return new PVector(lat, lng);
 }
 
-PVector latLngToPixel(float lat, float lng) {
+PVector latLngToPixel(float lat, float lng) { // Other conversion
   float x = map(lng, -180, 180, 0, 860);
   float y = map(lat, -90, 90, 860, 0);
   return new PVector(x, y);
 }
 
-float haversine(float lat1, float lon1, float lat2, float lon2) {
+float haversine(float lat1, float lon1, float lat2, float lon2) { // Uses a special formula to calculate distance (due to the Earth being a sphere)
   float R = 6371;
   float dLat = radians(lat2 - lat1);
   float dLon = radians(lon2 - lon1);
