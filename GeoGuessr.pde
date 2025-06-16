@@ -6,12 +6,34 @@ boolean locationReady = false, viewChanged = true, mapOpen = false, showResult =
 PVector guessCoord, guessPixel, actualPixel;
 float distanceKm = 0;
 
-float[][] landRegions = { 
-  {25, -125, 24, 60}, {43, -80, 20, 35}, {35, -10, 25, 45}, {55, 10, 15, 35},
-  {32, 128, 12, 15}, {23, 120, 3, 4}, {35, 126, 5, 4}, {-39, 173, 6, 10},
-  {-38, 140, 12, 13}, {-28, 114, 6, 18}, {-35, -72, 5, 10}, {-35, -63, 5, 6},
-  {19, -103, 7, 16}, {-35, 17, 8, 16},
-}; // Coordinates for general landmasses
+float[][] landRegions = {
+  // North America
+  {25, -125, 20, 60},   // Western & Central US
+  {40, -80, 20, 20},    // Eastern US & Canada
+  {15, -100, 10, 20},   // Mexico & Central America
+
+  // South America
+  {-55, -75, 30, 40},   // Chile, Argentina, Brazil, etc.
+
+  // Europe
+  {35, -10, 25, 45},    // Western to Eastern Europe
+  {55, 10, 15, 35},     // Northern Europe & Russia
+
+  // Africa
+  {0, -20, 35, 40},     // Sub-Saharan Africa
+  {-35, 10, 15, 30},    // South Africa, Namibia, etc.
+
+  // Asia
+  {5, 70, 30, 40},      // South Asia (India, Pakistan)
+  {25, 100, 20, 40},    // East Asia (China, Korea)
+  {5, 100, 15, 30},     // Southeast Asia (Thailand, Vietnam, Philippines)
+  {40, 60, 25, 60},     // Central/Northern Asia (Kazakhstan, Russia)
+
+  // Australia & NZ
+  {-40, 113, 25, 25},   // Australia
+  {-45, 165, 5, 10},    // New Zealand
+};
+// Coordinates for general landmasses
 
 void setup() {
   size(1720, 860);
